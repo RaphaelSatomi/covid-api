@@ -1,0 +1,242 @@
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="style.css"/>
+    </head>
+    <body>
+        Dados dos países sobre Covid-19
+        <select id="countries"></select>
+        
+        <div class="confirm-opt">
+            <h1></h1>
+        </div>
+        <div class="recovered-opt">
+            <h1></h1>
+        </div>
+        <div class="crit-opt">
+            <h1></h1>
+        </div>
+        <div class="death-opt">
+            <h1></h1>
+        </div>
+
+        <div class="pc_rec"><h2></h2></div>
+        <div class="pc_dea"><h2></h2></div>
+
+        <div class="pais_maior_caso">
+            <h2>Países com MAIOR aumento de casos no último dia</h2>
+            <div class="1"></div>
+            <div class="2"></div>
+            <div class="3"></div>
+            <div class="4"></div>
+            <div class="5"></div>
+        </div>
+        <div class="pais_menor_caso">
+            <h2>Países com MENOR aumento de casos no último dia</h2>
+            <div class="1"></div>
+            <div class="2"></div>
+            <div class="3"></div>
+            <div class="4"></div>
+            <div class="5"></div>
+        </div>
+
+        <div class="pais_maior_morte">
+            <h2>Países com MAIOR aumento de mortes no último dia</h2>
+            <div class="1"></div>
+            <div class="2"></div>
+            <div class="3"></div>
+            <div class="4"></div>
+            <div class="5"></div>
+        </div>
+        <div class="pais_menor_morte">
+            <h2>Países com MENOR aumento de mortes no último dia</h2>
+            <div class="1"></div>
+            <div class="2"></div>
+            <div class="3"></div>
+            <div class="4"></div>
+            <div class="5"></div>
+        </div>
+
+
+        <div class="pais_maior_in">
+            <h2>Países com MAIOR taxa de infecção com base na População</h2>
+            <div class="1"></div>
+            <div class="2"></div>
+            <div class="3"></div>
+            <div class="4"></div>
+            <div class="5"></div>
+        </div>
+        <div class="pais_menor_in">
+            <h2>Países com MENOR taxa de infecção com base na População</h2>
+            <div class="1"></div>
+            <div class="2"></div>
+            <div class="3"></div>
+            <div class="4"></div>
+            <div class="5"></div>
+        </div>
+
+
+        <div class="pais_maior_dea">
+            <h2>Países com MAIOR taxa de mortes com base nos infectados</h2>
+            <div class="1"></div>
+            <div class="2"></div>
+            <div class="3"></div>
+            <div class="4"></div>
+            <div class="5"></div>
+        </div>
+        <div class="pais_menor_dea">
+            <h2>Países com MENOR taxa de mortes com base nos infectados</h2>
+            <div class="1"></div>
+            <div class="2"></div>
+            <div class="3"></div>
+            <div class="4"></div>
+            <div class="5"></div>
+        </div>
+    </body>
+    <script>
+        
+        $.post("php.php", {
+            param: JSON.stringify("1")
+        },
+        function(data){
+            data = JSON.parse(data);
+            console.log(data);
+            for(let i = 0; i < data.response.length; i++){
+                $("#countries").append('<option value="'+data.response[i].toLowerCase()+'">'+data.response[i]+'</option>');
+            }
+        })
+        $('#countries').change(function(){
+            $.post("php.php", {
+                param: JSON.stringify("2#"+$(this).val())
+            },
+            function(data){
+                data = JSON.parse(data);
+                let all = data.response[0].cases.total;
+                let rec = data.response[0].cases.recovered;
+                let crit = data.response[0].cases.critical;
+                let dea = data.response[0].deaths.total;
+                $(".confirm-opt h1").text("Total de casos: "+(all).toLocaleString('pt-BR'));
+                $(".recovered-opt h1").text("Recuperados: "+(rec).toLocaleString('pt-BR'));
+                $(".crit-opt h1").text("Estado crítico: "+(crit).toLocaleString('pt-BR'));
+                $(".death-opt h1").text("Mortes: "+(dea).toLocaleString('pt-BR'));
+
+                (rec > 0)?pc_rec = (rec / (all / 100)).toFixed(2):pc_rec = 0,00;
+                (dea > 0)?pc_dea = (dea / (all / 100)).toFixed(2):pc_dea = 0,00;
+
+                $(".pc_rec h2").text("Porcentagem de Recuperados: "+pc_rec+"%");
+                $(".pc_dea h2").text("Porcentagem de Mortes: "+pc_dea+"%");
+            })
+        })
+
+        $.post("php.php", {
+            param: JSON.stringify("3")
+        },
+        function(data){
+            data = JSON.parse(data);
+            data_all = [];
+            console.log(data);
+            aumento_casos_array = [];
+            for(let i = 0; i < data.response.length; i++){
+                let pop = data.response[i].population;
+
+                let inf = data.response[i].cases.total;
+                let dea = data.response[i].deaths.total;
+
+                let aumento_casos = data.response[i].cases.new;
+
+                //aumento_casos_array.push({pais: data.response[i].country, })
+                if((inf !== null) && (pop !== null)){
+                    perc_infect = ((inf * 100) / pop);
+                    perc_death = ((dea * 100) / inf);
+
+                    data_all.push({pais: data.response[i].country, infect : perc_infect, death : perc_death});
+                }
+            }
+            // AUMENTO CASOS ÚLTIMO DIA
+            aumento_casos = (data.response).sort(( (a,b) => a.cases.new - b.cases.new ));
+            let j = 0;
+            let maior_aumento = aumento_casos.length - 1;
+            for(let i = maior_aumento; i > (maior_aumento - 5); i--){
+                j++;
+                num = (aumento_casos[i].cases.new).split("+");
+                num = (parseInt(num[1])).toLocaleString('pt-BR');
+                $(".pais_maior_caso ."+j).text(aumento_casos[i].country+" : +"+num);
+            }
+            menor_aumento = aumento_casos.filter(function(item){
+                if(item.cases.new > 0){
+                    return true;
+                }else{
+                    return false;
+                }
+            })
+            j = 0;
+            for(let i = 0; i < 5; i++){
+                j++;
+                num = (menor_aumento[i].cases.new).split("+");
+                num = (parseInt(num[1])).toLocaleString('pt-BR');
+                $(".pais_menor_caso ."+j).text(menor_aumento[i].country+" : +"+num);
+            }
+
+            // AUMENTO MORTES ÚLTIMO DIA
+            aumento_mortes = (data.response).sort(( (a,b) => a.deaths.new - b.deaths.new ));
+            j = 0;
+            maior_aumento = aumento_mortes.length - 1;
+            for(let i = maior_aumento; i > (maior_aumento - 5); i--){
+                j++;
+                num = (aumento_mortes[i].deaths.new).split("+");
+                num = (parseInt(num[1])).toLocaleString('pt-BR');
+                $(".pais_maior_morte ."+j).text(aumento_mortes[i].country+" : +"+num);
+            }
+            menor_aumento = aumento_mortes.filter(function(item){
+                if(item.deaths.new > 0){
+                    return true;
+                }else{
+                    return false;
+                }
+            })
+            j = 0;
+            for(let i = 0; i < 5; i++){
+                j++;
+                num = (menor_aumento[i].deaths.new).split("+");
+                num = (parseInt(num[1])).toLocaleString('pt-BR');
+                $(".pais_menor_morte ."+j).text(menor_aumento[i].country+" : +"+num);
+            }
+
+            // INFECTADOS
+            infect_all = data_all.sort(( (a,b) => a.infect - b.infect ));
+            let d_more = infect_all.length - 1;
+            j = 0;
+            for(let i = d_more; i > (d_more - 5); i--){
+                j++;
+                $(".pais_maior_in ."+j).text(infect_all[i].pais+" : "+(infect_all[i].infect).toFixed(2)+"%");
+            }
+            j = 0;
+            for(let i = 0; i < 5; i++){
+                j++;
+                $(".pais_menor_in ."+j).text(infect_all[i].pais+" : "+(infect_all[i].infect).toFixed(5)+"%");
+            }
+
+            death_all = infect_all.sort(( (a,b) => a.death - b.death ));
+            d_more = death_all.length - 1;
+            j = 0;
+            for(let i = d_more; i > (d_more - 5); i--){
+                j++;
+                $(".pais_maior_dea ."+j).text(death_all[i].pais+" : "+(death_all[i].death).toFixed(2)+"%");
+            }
+            j = 0;
+            pos_d = death_all.filter(function(item){
+                if(item.death > 0){
+                    return true;
+                }else{
+                    return false;
+                }
+            })
+            for(let i = 0; i < 5; i++){
+                j++;
+                $(".pais_menor_dea ."+j).text(pos_d[i].pais+" : "+(pos_d[i].death).toFixed(2)+"%");
+            }
+        });
+    </script>
+</html>
